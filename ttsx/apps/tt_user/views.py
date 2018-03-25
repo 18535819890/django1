@@ -7,7 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer,SignatureExpired
 from celery_tasks.tasks import send_user_active
-from django.contrib.auth import authenticate,login
+from django.contrib.auth import authenticate,login,logout
 # Create your views here.
 # def register(request):
 #     # 获取请求方法，判断是GET/POST请求
@@ -66,7 +66,7 @@ class RegisterViews(View):
         # msg ='<a href="http://127.0.0.1:8000/user/active/%s">点击激活</a>'%value
         # send_mail('天天生鲜账号激活','',settings.EMAIL_FROM,[uemail],html_message=msg)
 
-        send_user_active.delay(user)
+        send_user_active.delay(user.id,user.email)
 
         # 给出响应
         """处理POST请求，实现注册逻辑"""
@@ -121,12 +121,12 @@ class LoginView(View):
         #验证用户名、密码是否正确
         user=authenticate(username=uname,password=pwd)
         if user is None:
-            context['eerors_msg']='用户名或密码错误'
+            context['err_msg']='用户名或密码错误'
             return render(request,'login.html',context)
 
         #判断用户是否激活
         if not user.is_active:
-            context['eerors_msg']='请到邮箱中激活账户'
+            context['err_msg']='请到邮箱中激活账户'
             return render(request,'login.html',context)
 
         #记录状态
@@ -142,4 +142,10 @@ class LoginView(View):
 
         # 转向用户中心
         return response
+
+def logout_user(request):
+    logout(request)
+    return redirect('/user/login')
+
+
 
